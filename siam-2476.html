@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>สยาม 2476 — เกมบริหารประเทศ</title>
+<style>
+:root{--bg:#e8edf0;--fg:#14212b;--card:#f7fafb;--ac:#1f3a5f;--gold:#b8801a;--mu:#5d6b76;--bd:#c3ced6;--bad:#b3261e;--ok:#2e6b3f}
+@media(prefers-color-scheme:dark){:root{--bg:#0e1a22;--fg:#e6edf1;--card:#16262f;--ac:#8fb4e3;--gold:#e3b04b;--mu:#92a3ae;--bd:#2b4150;--bad:#ef8a82;--ok:#7fc795}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.55 "Sarabun","Noto Sans Thai",system-ui,sans-serif;padding:14px;max-width:760px;margin-inline:auto}
+h1{font:700 26px/1.2 "Noto Serif Thai","Sarabun",serif;margin:4px 0 2px;color:var(--ac)}
+h2{font:700 17px/1.3 "Noto Serif Thai","Sarabun",serif;margin:0 0 8px}
+.sub{color:var(--mu);margin:0 0 12px;font-size:14px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:6px;padding:12px;margin-bottom:12px}
+.date{display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:6px}
+.date b{font-size:20px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.st{border-left:3px solid var(--gold);padding-left:8px}
+.st span{display:block;font-size:13px;color:var(--mu)}
+.st b{font-size:18px}
+.rel{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin-top:10px}
+.bar{height:6px;background:var(--bd);border-radius:3px;overflow:hidden;margin-top:3px}
+.bar i{display:block;height:100%;background:var(--ac)}
+button{font:inherit;cursor:pointer;border:1px solid var(--ac);background:transparent;color:var(--ac);padding:8px 10px;border-radius:4px;text-align:left}
+button:hover:not(:disabled){background:var(--ac);color:var(--bg)}
+button:disabled{opacity:.4;cursor:not-allowed}
+button:focus-visible,input:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+.acts{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px}
+.acts small{display:block;color:var(--mu);font-size:12px}
+.acts button:hover:not(:disabled) small{color:inherit}
+.row{display:flex;gap:8px;margin-top:10px}
+input{flex:1;font:inherit;padding:8px;border:1px solid var(--bd);border-radius:4px;background:var(--bg);color:var(--fg);min-width:0}
+.go{background:var(--ac);color:var(--bg);text-align:center;font-weight:700;width:100%;margin-top:4px}
+.go:hover:not(:disabled){background:var(--gold);border-color:var(--gold);color:#000}
+.ev{border-color:var(--gold);border-width:2px}
+.ev button{display:block;width:100%;margin-top:6px}
+.log p{margin:0 0 6px;font-size:15px}
+.log .t{color:var(--gold);font-weight:700;margin-top:10px}
+.pos{color:var(--ok)}.neg{color:var(--bad)}
+.end{text-align:center}
+.end h2{font-size:22px}
+</style>
+</head>
+<body>
+<h1>สยาม 2476</h1>
+<p class="sub">คุณคือผู้นำรัฐบาลหลังการเปลี่ยนแปลงการปกครอง รอดให้ถึงต้นปี 2480 โดยไม่ถูกรัฐประหารและไม่ล้มละลาย</p>
+<div id="app"></div>
+<script>
+const MN=["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
+const LB={tr:["คลังหลวง","ล้านบาท"],gdp:["GDP (ดัชนี)",""],tx:["อัตราภาษี","%"],inf:["เงินเฟ้อ","%"],un:["ว่างงาน","%"],st:["เสถียรภาพ","%"],su:["ความนิยมรัฐบาล","%"],ar:["กองทัพ","/100"],in:["โครงสร้างพื้นฐาน","/100"],ind:["อุตสาหกรรม","/100"],fd:["อาหาร","/100"]};
+const RL={UK:"อังกฤษ",JP:"ญี่ปุ่น",FR:"ฝรั่งเศส",DE:"เยอรมนี"};
+const A={
+rail:{n:"สร้างทางรถไฟ",h:"คลัง -12 · ผลดีมาหลังเสร็จ",fx:{tr:-12,in:5},d:{t:3,fx:{gdp:4,su:2},m:"ทางรถไฟสายใหม่เสร็จ การขนส่งสินค้าคล่องขึ้น"},m:"เริ่มก่อสร้างทางรถไฟ แรงงานและเหล็กถูกเกณฑ์ไปทั้งโครงการ"},
+tup:{n:"ขึ้นภาษี",h:"รายได้รัฐเพิ่ม แต่คนไม่พอใจ",fx:{tx:2,su:-4,st:-1},m:"รัฐบาลปรับขึ้นภาษี พ่อค้าและชาวนาบ่นหนัก"},
+tdn:{n:"ลดภาษี",h:"คนพอใจ แต่รายได้รัฐลด",fx:{tx:-2,su:4,gdp:1},m:"รัฐบาลลดภาษี ตลาดคึกคักขึ้นเล็กน้อย"},
+army:{n:"ปฏิรูปกองทัพ",h:"คลัง -8 · ทหารพอใจ",fx:{tr:-8,ar:6,st:2,UK:-1},m:"เพิ่มงบและฝึกกองทัพ ผู้นำทหารพอใจ ต่างชาติจับตา"},
+edu:{n:"ขยายโรงเรียน",h:"คลัง -6 · ผลระยะยาว",fx:{tr:-6,su:3},d:{t:4,fx:{gdp:3,ind:2},m:"แรงงานที่ผ่านการศึกษาเริ่มเข้าสู่ระบบ"},m:"เปิดโรงเรียนเพิ่มทั่วหัวเมือง"},
+fac:{n:"ตั้งโรงงาน",h:"คลัง -10 · อุตสาหกรรมโต",fx:{tr:-10,ind:6,fd:-1},d:{t:3,fx:{gdp:3},m:"โรงงานเริ่มผลิตเต็มกำลัง"},m:"ตั้งโรงงานสีข้าว ปูนซีเมนต์ และทอผ้าเพิ่ม"},
+food:{n:"อุดหนุนข้าว",h:"คลัง -5 · อาหารเพิ่ม",fx:{tr:-5,fd:9,su:3},m:"รัฐอุดหนุนราคาข้าวและแจกจ่ายเสบียง"}
+};
+const DIP={UK:"เจรจากับอังกฤษ",JP:"เจรจากับญี่ปุ่น",FR:"เจรจากับฝรั่งเศส",DE:"เจรจากับเยอรมนี"};
+const EV=[
+{t:"ประชาชนประท้วงราคาข้าวที่แพงขึ้น 27% ในพระนคร",c:[["ลดภาษีข้าว",{su:4,tr:-5},"รัฐลดภาษีข้าว ราคาลง คนสงบ"],["ส่งตำรวจควบคุม",{su:-4,st:2},"ตำรวจสลายชุมนุม เมืองสงบแต่ความไม่พอใจค้างอยู่"],["ปล่อยให้ประท้วง",{st:-5,su:-2},"การประท้วงบานปลาย"]]},
+{t:"มีข่าวลือว่าผู้นำทหารบางกลุ่มไม่พอใจรัฐบาลและเตรียมก่อการ",c:[["เพิ่มเงินเดือนทหาร",{tr:-6,ar:3,st:4},"ทหารพอใจ ข่าวลือเงียบลง"],["โยกย้ายผู้นำทหาร",{st:2,ar:-3,su:-1},"โยกย้ายสำเร็จ แต่กองทัพสะเทือน"],["ไม่สนใจข่าวลือ",{st:-6},"ข่าวลือแพร่ไปทั่ว ความเชื่อมั่นลดลง"]]},
+{t:"เศรษฐกิจโลกตกต่ำ ราคาข้าวส่งออกร่วง",c:[["กู้เงินอังกฤษ",{tr:15,UK:5,st:-1},"ได้เงินกู้ก้อนใหญ่ แต่ผูกพันกับอังกฤษมากขึ้น"],["รัดเข็มขัดงบประมาณ",{su:-3,gdp:-2,tr:4},"ตัดรายจ่าย คนบ่นแต่คลังพอไหว"],["ใช้เงินกระตุ้นเศรษฐกิจ",{tr:-8,gdp:2,su:2},"ใช้เงินพยุงตลาด"]]},
+{t:"ญี่ปุ่นเสนอขายอาวุธและเครื่องจักรราคาพิเศษ",c:[["ซื้อ",{tr:-8,ar:6,JP:8,UK:-4},"ได้อาวุธใหม่ อังกฤษไม่สบายใจ"],["ปฏิเสธอย่างสุภาพ",{JP:-4,UK:2},"ญี่ปุ่นผิดหวังเล็กน้อย"]]},
+{t:"อังกฤษขอสัมปทานเหมืองแร่ภาคใต้เพิ่ม",c:[["อนุญาต",{tr:10,UK:6,su:-3},"ได้ค่าสัมปทาน แต่ถูกวิจารณ์ว่าขายชาติ"],["ปฏิเสธ",{UK:-6,su:2},"ประชาชนชื่นชม อังกฤษไม่พอใจ"]]},
+{t:"น้ำท่วมใหญ่ที่ภาคกลาง นาข้าวเสียหาย",c:[["ส่งความช่วยเหลือเต็มที่",{tr:-7,su:4,fd:5},"รัฐช่วยเหลือเต็มที่ ได้ใจประชาชน"],["ช่วยตามกำลัง",{tr:-2,su:-2,fd:-4},"ความช่วยเหลือไม่ทั่วถึง"]]},
+{t:"ฝรั่งเศสมีข้อพิพาทเขตแดนริมโขงกับสยาม",c:[["เจรจาโดยสันติ",{FR:5,tr:-2},"เจรจาจบลงด้วยดี"],["แสดงท่าทีแข็งกร้าว",{FR:-6,su:3,ar:-1},"คนในประเทศชอบใจ แต่ฝรั่งเศสเย็นชา"]]},
+{t:"เยอรมนีเสนอแลกเปลี่ยนเทคโนโลยีอุตสาหกรรม",c:[["รับข้อเสนอ",{tr:-6,ind:5,DE:8,UK:-1},"ได้ความรู้ด้านโรงงานและเครื่องจักร"],["ไม่รับ",{DE:-2},"ปล่อยโอกาสผ่านไป"]]},
+{t:"พ่อค้าชาวจีนในพระนครรวมตัวหยุดค้าขายประท้วงภาษี",c:[["เจรจาผ่อนผัน",{tr:-3,gdp:1,su:1},"ตกลงกันได้ ตลาดกลับมา"],["บังคับใช้กฎหมาย",{tr:3,gdp:-3,su:-3},"เก็บภาษีได้ แต่ตลาดซบเซา"]]}
+];
+let S,KEY="siam2476";
+function fresh(){return{y:2476,m:1,ap:2,tr:60,gdp:100,tx:10,inf:3,un:8,st:55,su:50,ar:40,in:30,ind:20,fd:60,r:{UK:40,JP:30,FR:20,DE:25},q:[],ev:null,last:-1,log:[{t:"มกราคม 2476",p:["คุณเข้ารับตำแหน่ง คลังมีเงินไม่มากนัก ทหารและพ่อค้ามองรัฐบาลใหม่อย่างระแวง เลือกนโยบายได้ 2 อย่างต่อเดือน"]}],over:null}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+function load(){try{const j=localStorage.getItem(KEY);if(j)return JSON.parse(j)}catch(e){}return fresh()}
+const cl=(v,a,b)=>Math.max(a,Math.min(b,v));
+function ap(fx){const out=[];for(const k in fx){const v=fx[k];if(k in S.r){S.r[k]=cl(S.r[k]+v,-100,100);out.push((RL[k])+" "+(v>0?"+":"")+v)}else{S[k]+=v;if(k=="gdp")S[k]=Math.max(10,S[k]);else if(k!="tr")S[k]=cl(S[k],0,100);out.push(LB[k][0]+" "+(v>0?"+":"")+v)}}return out.join(", ")}
+function cur(){return S.log[0]}
+function say(txt){cur().p.push(txt)}
+function act(k){if(S.ap<=0||S.ev||S.over)return;const a=A[k];const f=ap(a.fx);if(a.d)S.q.push({t:a.d.t,fx:a.d.fx,m:a.d.m});S.ap--;say(a.m+" ("+f+")");save();draw()}
+function dip(k){if(S.ap<=0||S.ev||S.over)return;const f=ap({tr:-2,[k]:8});S.ap--;say("ส่งทูตไปเจรจากับ"+RL[k]+" ความสัมพันธ์ดีขึ้น ("+f+")");save();draw()}
+function free(){const el=document.getElementById("cmd");const t=el.value.trim();if(!t)return;if(S.ap<=0||S.ev||S.over)return;
+const m=[[/รถไฟ|ทางรถไฟ/,()=>act("rail")],[/ลด.*ภาษี|ภาษี.*ลด/,()=>act("tdn")],[/ภาษี/,()=>act("tup")],[/ทหาร|กองทัพ|อาวุธ/,()=>act("army")],[/โรงเรียน|การศึกษา|ครู/,()=>act("edu")],[/โรงงาน|อุตสาหกรรม/,()=>act("fac")],[/ข้าว|อาหาร|เสบียง|อุดหนุน/,()=>act("food")],[/อังกฤษ/,()=>dip("UK")],[/ญี่ปุ่น/,()=>dip("JP")],[/ฝรั่งเศส/,()=>dip("FR")],[/เยอรมัน/,()=>dip("DE")]];
+for(const [re,fn] of m){if(re.test(t)){say("คำสั่ง: “"+t+"”");fn();el.value="";return}}
+S.ap--;const d=Math.random()<.5?1:-1;say("คำสั่ง: “"+t+"” ไม่ชัดเจนพอ ข้าราชการตีความต่างกัน ผลที่ได้จึงน้อย ("+ap({su:d})+")");el.value="";save();draw()}
+function pick(i){const e=S.ev;if(!e)return;const c=EV[e.i].c[i];const f=ap(c[1]);say("เหตุการณ์: เลือก“"+c[0]+"” — "+c[2]+" ("+f+")");S.ev=null;save();draw()}
+function endTurn(){if(S.ev||S.over)return;
+const rep=[];
+// delayed
+S.q=S.q.filter(x=>{x.t--;if(x.t<=0){const f=ap(x.fx);rep.push(x.m+" ("+f+")");return false}return true});
+// economy
+const g=.002+(S.in-30)*.0004+(S.ind-20)*.0005+(S.st-50)*.0002-(S.tx-10)*.002;
+const old=S.gdp;S.gdp=Math.max(10,S.gdp*(1+g));
+const inc=S.gdp*S.tx/100*1.2,sp=7+S.ar*.08;
+S.tr+=inc-sp;
+S.inf=Math.max(0,S.inf+(S.tr<0?1:-.1));
+S.un=cl(S.un+(S.gdp<old?.3:-.1),0,60);
+S.fd=cl(S.fd-.5,0,100);
+let ds=0;if(S.inf>6)ds--;if(S.un>12)ds--;if(S.fd<40)ds--;if(S.tx>14)ds--;
+S.su=cl(S.su+ds,0,100);
+let dt=0;if(S.su<35)dt-=2;if(S.su>60)dt+=.5;if(S.ar<25)dt--;
+S.st=cl(S.st+dt,0,100);
+["gdp","tr","inf","un","st","su","fd"].forEach(k=>S[k]=Math.round(S[k]*10)/10);
+rep.push("รายได้รัฐ "+inc.toFixed(1)+" รายจ่าย "+sp.toFixed(1)+" ล้านบาท");
+if(ds<0)rep.push("ความไม่พอใจของประชาชนสะสมเพิ่ม");
+S.m++;if(S.m>12){S.m=1;S.y++}
+S.ap=2;
+S.log.unshift({t:MN[S.m-1]+" "+S.y,p:rep});if(S.log.length>12)S.log.pop();
+// end checks
+if(S.st<=0){S.over={t:"รัฐประหาร",m:"เสถียรภาพหมดลง คณะทหารยึดอำนาจและรัฐบาลของคุณสิ้นสุดลง"}}
+else if(S.tr<-40){S.over={t:"รัฐล้มละลาย",m:"คลังหลวงติดลบหนัก ข้าราชการไม่ได้เงินเดือน รัฐบาลต้องลาออก"}}
+else if(S.y>=2480){const sc=Math.round(S.gdp+S.su+S.st+S.tr/2);S.over={t:"คุณรอดถึงปี 2480",m:"คะแนนรวม "+sc+" (GDP + นิยม + เสถียรภาพ + ครึ่งหนึ่งของเงินคงคลัง)"}}
+else if(Math.random()<.55){let i;let n=0;do{i=Math.floor(Math.random()*EV.length)}while(i==S.last&&n++<5);S.last=i;S.ev={i};S.log[0].p.push("เหตุการณ์: "+EV[i].t)}
+save();draw()}
+function restart(){S=fresh();save();draw()}
+function draw(){
+const bar=v=>'<div class="bar"><i style="width:'+cl(v,0,100)+'%"></i></div>';
+let h='<div class="card"><div class="date"><b>'+MN[S.m-1]+" พ.ศ. "+S.y+'</b><span>สิทธิ์เลือกนโยบายเหลือ '+S.ap+' ครั้ง</span></div><div class="grid" style="margin-top:10px">';
+["tr","gdp","tx","inf","un","st","su","ar","in","ind","fd"].forEach(k=>{const v=S[k];h+='<div class="st"><span>'+LB[k][0]+'</span><b>'+(typeof v=="number"?Math.round(v*10)/10:v)+'</b> <small>'+LB[k][1]+'</small>'+(["st","su","ar","in","ind","fd"].includes(k)?bar(v):'')+'</div>'});
+h+='</div><div class="rel">';
+for(const k in RL){const v=S.r[k];h+='<div><span style="font-size:13px;color:var(--mu)">ความสัมพันธ์กับ'+RL[k]+'</span> <b class="'+(v<0?'neg':v>30?'pos':'')+'">'+v+'</b>'+bar((v+100)/2)+'</div>'}
+h+='</div></div>';
+if(S.over){h+='<div class="card end"><h2>'+S.over.t+'</h2><p>'+S.over.m+'</p><button class="go" onclick="restart()">เริ่มเกมใหม่</button></div>'}
+else if(S.ev){const e=EV[S.ev.i];h+='<div class="card ev"><h2>เหตุการณ์</h2><p>'+e.t+'</p>';e.c.forEach((c,i)=>{h+='<button onclick="pick('+i+')">'+c[0]+'</button>'});h+='</div>'}
+else{
+h+='<div class="card"><h2>นโยบาย</h2><div class="acts">';
+for(const k in A){h+='<button '+(S.ap<=0?'disabled':'')+' onclick="act(\''+k+'\')">'+A[k].n+'<small>'+A[k].h+'</small></button>'}
+for(const k in DIP){h+='<button '+(S.ap<=0?'disabled':'')+' onclick="dip(\''+k+'\')">'+DIP[k]+'<small>คลัง -2 · ความสัมพันธ์ +8</small></button>'}
+h+='</div><div class="row"><input id="cmd" placeholder="หรือพิมพ์คำสั่งเอง เช่น สร้างทางรถไฟ, ลดภาษี" onkeydown="if(event.key===\'Enter\')free()"><button onclick="free()">สั่งการ</button></div></div>';
+h+='<button class="go" onclick="endTurn()">จบเดือน</button>'}
+h+='<div class="card log" style="margin-top:12px"><h2>รายงาน</h2>';
+S.log.forEach(l=>{h+='<p class="t">'+l.t+'</p>';l.p.forEach(p=>h+='<p>'+p+'</p>')});
+h+='</div><button onclick="if(confirm(\'เริ่มเกมใหม่?\'))restart()">เริ่มใหม่</button>';
+document.getElementById("app").innerHTML=h}
+S=load();draw();
+</script>
+</body>
+</html>
